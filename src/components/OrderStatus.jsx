@@ -1,39 +1,91 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getOrderStatus } from '../services/api';
 import { useParams } from 'react-router-dom';
 
 /**
  * Componente para mostrar el estado de un pedido específico
  * @param {Function} onOrderLoad - Callback que se ejecuta cuando se carga el pedido
+ * @param {Function} onRefreshRequest - Callback para exponer la función de refresh al componente padre
  */
-function OrderStatus({ onOrderLoad }) {
+function OrderStatus({ onOrderLoad, onRefreshRequest }) {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const pollIntervalRef = useRef(null);
 
-  useEffect(() => {
-    const fetchOrderStatus = async () => {
-      try {
+  // Función para obtener el estado del pedido (memoizada)
+  const fetchOrderStatus = useCallback(async (isInitialLoad = false) => {
+    try {
+      if (isInitialLoad) {
         setLoading(true);
-        setError(null);
-        const orderData = await getOrderStatus(orderId);
-        setOrder(orderData);
-        // Notificar al componente padre cuando se carga el pedido
-        if (onOrderLoad) {
-          onOrderLoad(orderData);
-        }
-      } catch (err) {
-        setError(err.message || 'Error al cargar el estado del pedido');
-      } finally {
-        setLoading(false);
+      } else {
+        setIsRefreshing(true);
       }
-    };
-
-    if (orderId) {
-      fetchOrderStatus();
+      setError(null);
+      const orderData = await getOrderStatus(orderId);
+      setOrder(orderData);
+      // Notificar al componente padre cuando se carga el pedido
+      if (onOrderLoad) {
+        onOrderLoad(orderData);
+      }
+      return orderData;
+    } catch (err) {
+      setError(err.message || 'Error al cargar el estado del pedido');
+      return null;
+    } finally {
+      if (isInitialLoad) {
+        setLoading(false);
+      } else {
+        setIsRefreshing(false);
+      }
     }
   }, [orderId, onOrderLoad]);
+
+  // Exponer la función de refresh al componente padre
+  useEffect(() => {
+    if (onRefreshRequest) {
+      onRefreshRequest(() => fetchOrderStatus(false));
+    }
+  }, [onRefreshRequest, fetchOrderStatus]);
+
+  // Carga inicial y polling automático
+  useEffect(() => {
+    if (!orderId) return;
+
+    // Carga inicial
+    fetchOrderStatus(true);
+
+    // Estados finales que no requieren polling
+    const finalStates = ['ready', 'delivered', 'cancelled'];
+
+    // Limpiar intervalo anterior si existe
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+
+    // Configurar polling automático cada 5 segundos
+    pollIntervalRef.current = setInterval(async () => {
+      const currentOrder = await fetchOrderStatus(false);
+      
+      // Si el pedido llegó a un estado final, detener el polling
+      if (currentOrder && finalStates.includes(currentOrder.status)) {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+      }
+    }, 5000); // Actualizar cada 5 segundos
+
+    // Limpiar el intervalo cuando el componente se desmonte o cambie el orderId
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [orderId, fetchOrderStatus]);
 
   // Función para obtener el icono según el nombre del item
   const getItemIcon = (itemName) => {
@@ -93,15 +145,30 @@ function OrderStatus({ onOrderLoad }) {
   const isBeingPrepared = order.status === 'cooking' || order.status === 'ready' || order.status === 'delivered';
   const isReadyForPickup = order.status === 'ready' || order.status === 'delivered';
 
+  // Determinar si el pedido está en un estado final
+  const isFinalState = ['ready', 'delivered', 'cancelled'].includes(order.status);
+
   return (
     <>
       {/* Headline Text */}
-      <h1 className="text-center text-[32px] font-bold leading-tight tracking-tight text-text-light dark:text-text-dark">
-        Order #{displayOrderId}
-      </h1>
+      <div className="relative">
+        <h1 className="text-center text-[32px] font-bold leading-tight tracking-tight text-text-light dark:text-text-dark">
+          Order #{displayOrderId}
+        </h1>
+        {isRefreshing && (
+          <div className="absolute top-0 right-0">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+          </div>
+        )}
+      </div>
       <p className="pt-1 text-center text-base font-normal leading-normal text-subtext-light dark:text-subtext-dark">
         For: {customerName}
       </p>
+      {!isFinalState && (
+        <p className="pt-1 text-center text-xs font-normal text-subtext-light dark:text-subtext-dark opacity-70">
+          Actualizando automáticamente...
+        </p>
+      )}
 
       {/* Timeline / Status Stepper */}
       <div className="mt-8 rounded-xl bg-card-light dark:bg-card-dark p-6 shadow-sm">

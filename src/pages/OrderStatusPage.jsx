@@ -9,6 +9,7 @@ import OrderStatus from '../components/OrderStatus';
 function OrderStatusPage() {
   const navigate = useNavigate();
   const [orderData, setOrderData] = useState(null);
+  const [refreshFunction, setRefreshFunction] = useState(null);
 
   return (
     <div className="relative flex min-h-screen w-full flex-col group/design-root bg-background-light dark:bg-background-dark">
@@ -32,11 +33,14 @@ function OrderStatusPage() {
 
       {/* Main Content */}
       <main className="flex-grow px-4 pb-28 pt-4">
-        <OrderStatus onOrderLoad={setOrderData} />
+        <OrderStatus 
+          onOrderLoad={setOrderData} 
+          onRefreshRequest={setRefreshFunction}
+        />
       </main>
 
       {/* Bottom Bar / Footer */}
-      <OrderStatusFooter order={orderData} />
+      <OrderStatusFooter order={orderData} onRefresh={refreshFunction} />
     </div>
   );
 }
@@ -44,8 +48,9 @@ function OrderStatusPage() {
 /**
  * Componente del footer con tiempo estimado y botón de refresh
  * @param {Object} order - Datos del pedido
+ * @param {Function} onRefresh - Función para refrescar el estado del pedido
  */
-function OrderStatusFooter({ order }) {
+function OrderStatusFooter({ order, onRefresh }) {
   // Calcular tiempo estimado basado en el estado del pedido
   const calculateEstimatedTime = () => {
     if (!order) {
@@ -91,8 +96,13 @@ function OrderStatusFooter({ order }) {
   const estimatedTime = calculateEstimatedTime();
 
   const handleRefresh = () => {
-    // Recargar la página para obtener el estado actualizado
-    window.location.reload();
+    // Si hay una función de refresh disponible, usarla; sino, recargar la página
+    if (onRefresh && typeof onRefresh === 'function') {
+      onRefresh();
+    } else {
+      // Fallback: recargar la página si no hay función de refresh
+      window.location.reload();
+    }
   };
 
   return (
