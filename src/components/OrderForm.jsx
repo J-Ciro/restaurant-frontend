@@ -28,6 +28,7 @@ export default function OrderForm() {
   const [orderId, setOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [touched, setTouched] = useState({ name: false, email: false });
 
   // Incrementar cantidad de un item
   const increment = (itemId) => {
@@ -59,6 +60,9 @@ export default function OrderForm() {
 
   // Enviar pedido
   const handleSubmit = async () => {
+    // Marcar campos como tocados al intentar enviar
+    setTouched({ name: true, email: true });
+    
     if (!isFormValid()) {
       setError('Please enter your name, email, and select at least one item');
       return;
@@ -136,11 +140,19 @@ export default function OrderForm() {
               </p>
               <input
                 type="text"
-                className="form-input flex w-full resize-none overflow-hidden rounded-lg text-[#181311] dark:text-white focus:outline-0 focus:ring-0 border border-[#e6dfdb] dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-primary dark:focus:border-primary h-14 placeholder:text-[#896f61] p-[15px] text-base font-normal leading-normal"
+                className={`form-input flex w-full resize-none overflow-hidden rounded-lg text-[#181311] dark:text-white focus:outline-0 focus:ring-0 border ${
+                  touched.name && customerName.trim().length === 0
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-[#e6dfdb] dark:border-gray-600'
+                } bg-white dark:bg-gray-800 focus:border-primary dark:focus:border-primary h-14 placeholder:text-[#896f61] p-[15px] text-base font-normal leading-normal`}
                 placeholder="Enter your name"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
+                onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
               />
+              {touched.name && customerName.trim().length === 0 && (
+                <p className="text-red-500 text-sm mt-1">Name is required</p>
+              )}
             </label>
 
             {/* Campo Email */}
@@ -150,11 +162,19 @@ export default function OrderForm() {
               </p>
               <input
                 type="email"
-                className="form-input flex w-full resize-none overflow-hidden rounded-lg text-[#181311] dark:text-white focus:outline-0 focus:ring-0 border border-[#e6dfdb] dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-primary dark:focus:border-primary h-14 placeholder:text-[#896f61] p-[15px] text-base font-normal leading-normal"
+                className={`form-input flex w-full resize-none overflow-hidden rounded-lg text-[#181311] dark:text-white focus:outline-0 focus:ring-0 border ${
+                  touched.email && customerEmail.trim().length === 0
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-[#e6dfdb] dark:border-gray-600'
+                } bg-white dark:bg-gray-800 focus:border-primary dark:focus:border-primary h-14 placeholder:text-[#896f61] p-[15px] text-base font-normal leading-normal`}
                 placeholder="your@email.com"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
+                onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
               />
+              {touched.email && customerEmail.trim().length === 0 && (
+                <p className="text-red-500 text-sm mt-1">Email is required</p>
+              )}
             </label>
 
             {/* Campo Notas */}
