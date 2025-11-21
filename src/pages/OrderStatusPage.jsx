@@ -56,17 +56,27 @@ function OrderStatusFooter({ order }) {
     const createdAt = new Date(order.createdAt);
     const elapsedMinutes = Math.floor((now - createdAt) / (1000 * 60));
 
-    // Tiempo estimado según el estado
+    // Tiempo estimado según el estado (ya normalizado por el servicio API)
     let estimatedMinutes;
     switch (order.status) {
       case 'pending':
+        // Estado PENDING: tiempo estimado inicial de 15 minutos
         estimatedMinutes = Math.max(0, 15 - elapsedMinutes);
         break;
       case 'cooking':
+      case 'preparing':
+        // Estado PREPARING: tiempo estimado de 10 minutos restantes
         estimatedMinutes = Math.max(0, 10 - elapsedMinutes);
         break;
       case 'ready':
+        // Estado READY: listo para recoger
         return "Listo para recoger";
+      case 'delivered':
+        // Estado DELIVERED: ya entregado
+        return "Entregado";
+      case 'cancelled':
+        // Estado CANCELLED: cancelado
+        return "Cancelado";
       default:
         estimatedMinutes = 12;
     }
@@ -81,6 +91,7 @@ function OrderStatusFooter({ order }) {
   const estimatedTime = calculateEstimatedTime();
 
   const handleRefresh = () => {
+    // Recargar la página para obtener el estado actualizado
     window.location.reload();
   };
 

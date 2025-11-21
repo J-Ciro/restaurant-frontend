@@ -84,13 +84,14 @@ function OrderStatus({ onOrderLoad }) {
     );
   }
 
-  const displayOrderId = order.orderId || order._id || 'N/A';
-  const customerName = order.customer || 'Cliente';
+  // Obtener el número de pedido o ID para mostrar
+  const displayOrderId = order.orderNumber || order.orderId || order._id || 'N/A';
+  const customerName = order.customerName || order.customer || 'Cliente';
 
-  // Determinar estados del timeline
+  // Determinar estados del timeline basado en el status normalizado
   const isOrderReceived = true; // Siempre completado una vez que se carga
-  const isBeingPrepared = order.status === 'cooking' || order.status === 'ready';
-  const isReadyForPickup = order.status === 'ready';
+  const isBeingPrepared = order.status === 'cooking' || order.status === 'ready' || order.status === 'delivered';
+  const isReadyForPickup = order.status === 'ready' || order.status === 'delivered';
 
   return (
     <>
@@ -118,7 +119,7 @@ function OrderStatus({ onOrderLoad }) {
           <div className="flex flex-col items-center gap-2 text-center">
             <div className={`relative flex h-10 w-10 items-center justify-center rounded-full ${isBeingPrepared ? 'bg-primary text-white' : 'bg-border-light dark:bg-border-dark text-subtext-light dark:text-subtext-dark'}`}>
               <span className="material-symbols-outlined">{isReadyForPickup ? 'check' : 'soup_kitchen'}</span>
-              {order.status === 'cooking' && (
+              {(order.status === 'cooking' || order.status === 'preparing') && (
                 <div className="absolute h-full w-full animate-ping rounded-full bg-primary opacity-50"></div>
               )}
             </div>
