@@ -2,6 +2,9 @@
 
 Una interfaz ligera para la aplicación del Restaurante — frontend construido con React (Vite) y TailwindCSS. Este repositorio contiene el código cliente (JavaScript, CSS, HTML) y un Dockerfile para construir y ejecutar la aplicación en un contenedor.
 
+<img width="1863" height="349" alt="image" src="https://github.com/user-attachments/assets/906fc516-7ab8-4c63-a8d3-c993e7a5ed0c" />
+
+
 ## Contenido
 - Acerca de
 - Funcionalidades
